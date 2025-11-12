@@ -1,2 +1,5 @@
-from django.db import models
-# Add models here.
+# from django.db import models
+# from .base_models import TimestampedModel
+
+# class Analytics(TimestampedModel):
+    
