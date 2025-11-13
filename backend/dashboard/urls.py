@@ -1,6 +1,8 @@
 from django.urls import path
-from . import views
+from dashboard import views
 
 urlpatterns = [
-    path('ping/', views.ping, name='dashboard-ping'),
+    path('job-status-data', views.JobStatusDataAPIView.as_view(), name='job-status-data'),
+    path('category-data', views.CategoryDataAPIView.as_view(), name='category-data'),
+    path('metrics-data', views.MetricsDataAPIView.as_view(), name='metrics-data'),
 ]
