@@ -1,0 +1,44 @@
+{
+    "name": "Mia Allen",
+    "email": "email@email.com",
+    "phone": "(541) 754-3010",
+    "skills": [
+        "Childcare",
+        "Mathematics Tutoring",
+        "Science Tutoring",
+        "Play Therapy",
+        "Early Childhood Development",
+        "Safe Driving",
+        "Infant Care",
+        "CPR",
+        "Professional Au Pair Practices",
+        "Child Development"
+    ],
+    "summary": "Enthusiastic, competent, and energetic Au Pair with a level head and proven record of providing exemplary childcare assistance to families. Well-groomed and eloquent with a diplomatic demeanor. Specialized competencies include tutoring mathematics and science subjects for Elementary School children. A registered play therapist with a Bachelor's Degree in Early Childhood Development. Transported children daily with a 100% clean driving record.",
+    "experience": [
+        {
+            "company": "Smith Family",
+            "title": "Live In Au Pair",
+            "start_date": "Mar 2022",
+            "end_date": "Dec 2025",
+            "description": "Received three letters of recommendation from the family, physician, and psychologist during the period caring for an autistic boy aged 11 and making a valuable contribution to his social skills by taking him to volunteer at an animal shelter once a week. Responsible for taking care of 6-year old twin girls. Prepare breakfast in the morning and pack lunch boxes with nutritious foods. Drop the twins off at school in the mornings and fetch them in the afternoons. Drive children to ballet class twice a week and violin lessons once a week. Provide them with a mid-afternoon snack before they start their homework. Assist with homework activities where needed. Take them to play dates during weekends. Occasionally drive the children to doctor's appointments when neither one of the parents are available. Ensure that children are fed and bathed by 7 pm in the evenings."
+        },
+        {
+            "company": "Bernard Family",
+            "title": "Teacher Au Pair",
+            "start_date": "May 2020",
+            "end_date": "Feb 2022",
+            "description": "Assisted a ten-year-old girl by improving her overall academic performance by 45% after realizing that she has dyslexia and bringing that the parent's attention which in turn got her the professional help she needed. Help to promote the academic, social and mental development of two children of ages 5 and 7. Provide after school tutoring in mathematics and science at the school premises. Take the children home after tutoring lessons are done. Engaged in play therapy sessions with time twice per week, and supervising free playtimes. Oversee homework assignments and class projects. Prepare the evening meal for the family. Ensure that the children bathe themselves and clean up their rooms before dinner. Read stories to the children before bedtime."
+        }
+    ],
+    "education": [
+        {
+            "degree": "Associates Degree",
+            "field": "Education",
+            "institution": "University of Ohio, Springfield",
+            "start_year": "2012",
+            "end_year": "2013"
+        }
+    ],
+    "file": "/app/resumes/Au-pair-resume-example-7.pdf"
+}

@@ -1,0 +1,89 @@
+{
+    "name": "Johanna Burton",
+    "email": "email@email.com",
+    "phone": "(541) 754-3010",
+    "skills": [
+        "Time Management",
+        "Record Keeping",
+        "Client Interaction",
+        "Client Relations",
+        "Collaboration Tools",
+        "CRM Platforms",
+        "Call Centre Operations",
+        "Customer Service",
+        "Inquiry Resolution",
+        "Customer Engagement",
+        "Live Chat Support",
+        "Payment Processing",
+        "Account Management",
+        "Dispute Resolution",
+        "Quality Assurance",
+        "Compliance",
+        "Documentation",
+        "Verbal Communication",
+        "Written Communication",
+        "Financial Planning"
+    ],
+    "summary": "Energetic Customer Service Representative with three years' work tenure in resolving complex customer inquiries. Passionate about building sustainable customer relationships, driving brand loyalty, and increasing customer engagement.",
+    "experience": [
+        {
+            "company": "Ding Dong Telecoms",
+            "title": "Customer Service Representative",
+            "start_date": "Oct 2024",
+            "end_date": "Present",
+            "description": "Manage to solve any problems that may arise, by responding to messages within 60 seconds, thereby improving customer service ratings by 25%. Handle inbound calls from credit card cardholders. Assist cardholders with account queries, billing issues, payment arrangements, financial planning and service promotions. Help customers with credit line increases/decrease inquiries, disputes, and account education. Collaborate with clientele to resolve credit card disputes, written or verbal. Allocate payments directly into customers' accounts, complying to customer and company specifications. Maintain and exceed the bank's established quality, compliance, and customer service standards. Document each customer's account accessed with information provided including the outcome of the call."
+        },
+        {
+            "company": "ABC Banking Group",
+            "title": "Live Chat Service Agent",
+            "start_date": "Feb 2023",
+            "end_date": "Sep 2024",
+            "description": "Engage with 80 clients per day via the live messaging system and resolve 90% of queries. Handle inbound message queries from clients via the live chat platform. Assist subscribers with account queries, billing issues, payments. Aim to solve any problems that may arise, by responding to messages within 60 seconds. Answer customer questions promptly and if the queries are more complex, update them with feedback and anticipated waiting time. Follow set out protocols to they must listen carefully to resolve the issue or answer the question. Document written chats and also the results categorized as query solved or query escalated to call center department. Provide real-time support and give clients helpful links to Q&A sites to assist them with their issues. Offer clients access to company URL's for extra information about new products and services. Keep track of general patterns when communicating with customers and sharing these with the service department."
+        },
+        {
+            "company": "Blue Moon Debt & Mortages",
+            "title": "Financial Customer Service Representative",
+            "start_date": "Oct 2021",
+            "end_date": "Dec 2023",
+            "description": "On a monthly basis an average of 25 - 38 customers receive assistance to refinance finance their credit card debt, due to personal financial problems like layoffs or unforeseen health complications. Handle inbound calls from credit card cardholders. Assist cardholders with account queries, billing issues, payment arrangements, financial planning and service promotions. Help customers with credit line increases/decrease inquiries, disputes, and account education. Collaborate with clientele to resolve credit card disputes, written or verbal. Allocate payments directly into customers' accounts, complying to customer and company specifications. Maintain and exceed the bank's established quality, compliance, and customer service standards. Document each customer's account accessed with information provided including the outcome of the call."
+        },
+        {
+            "company": "Inres College, CA",
+            "title": "Financial Customer Service Representative",
+            "start_date": "Jan 2016",
+            "end_date": null,
+            "description": null
+        },
+        {
+            "company": "Andango Animal Shelter",
+            "title": "Volunteer",
+            "start_date": "Aug 2015",
+            "end_date": "Present",
+            "description": null
+        }
+    ],
+    "education": [
+        {
+            "degree": "BA",
+            "field": "Service Management - Mass-Market Retail Enterprise Management",
+            "institution": "Ashford University",
+            "start_year": "2019",
+            "end_year": "2021"
+        },
+        {
+            "degree": "Certified Client Service Professional (CCSP)",
+            "field": "Client Service",
+            "institution": "Oakload College",
+            "start_year": "2018",
+            "end_year": "2019"
+        },
+        {
+            "degree": "High School Diploma",
+            "field": null,
+            "institution": "Chris Jones High School",
+            "start_year": null,
+            "end_year": "2017"
+        }
+    ],
+    "file": "/app/resumes/Customer-service-representative-resume-example-17.pdf"
+}

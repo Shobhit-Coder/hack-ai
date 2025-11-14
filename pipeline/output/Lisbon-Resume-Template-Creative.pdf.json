@@ -1,0 +1,82 @@
+{
+    "name": "MICHELLE JEWETT",
+    "email": "email@email.com",
+    "phone": "(541) 754-3010",
+    "skills": [
+        "HTML",
+        "WordPress",
+        "Project Management",
+        "Microsoft Word",
+        "PowerPoint",
+        "Excel",
+        "Visual Studio",
+        "Adobe Photoshop",
+        "Dreamweaver MX",
+        "Flash MX",
+        "Oracle",
+        "MS Access",
+        "CRM"
+    ],
+    "summary": "Recent Bachelor of Marketing & Business Management graduate seeking an internship that will allow for learning the ins and outs of the advertising field and provide an opportunity to add value to ABC Marketing by applying theoretical knowledge into practice. Previous informal experience with social media channel set up and blogging has been gained during university as part of the Campus Newspaper team.",
+    "experience": [
+        {
+            "company": "Columbus State University",
+            "title": "News Paper Editor",
+            "start_date": "NOVEMBER 2016",
+            "end_date": "FEBRUARY 2019",
+            "description": "Created three new websites for the Columbus State University's marketing, engineering and medical faculties within a period of two months. Responsible for weekly editor's comments for the newspaper. Proofread and edit write ups from staff members."
+        },
+        {
+            "company": "Coca Cola",
+            "title": "Marketing Intern",
+            "start_date": "JUNE 2017",
+            "end_date": "SEPTEMBER 2017",
+            "description": "Update database of 5000 clients using MS Access and categorize data in accordance with client demographics. Accumulate quantitative and qualitative data to prepare market studies and analytics. Conduct competitor analysis."
+        },
+        {
+            "company": "Boston Legal",
+            "title": "Business Management Intern",
+            "start_date": "JULY 2018",
+            "end_date": "SEPTEMBER 2018",
+            "description": "Instrumental in transferring 2000 client files onto the new digital CRM system. Assist with general office work in HR and operational departments. Assist in the write up of policies and procedures. Check production reports and comparing with financial reports. Assist in updating safety documentation on the company system."
+        },
+        {
+            "company": "Florida County Healthcare Association",
+            "title": "General Intern",
+            "start_date": "MARCH 2016",
+            "end_date": "AUGUST 2016",
+            "description": "Instrumental in organizing the weekly Q&A session between management and members of the association and handled all email correspondence preceding and following these events. Answer phone inquiries, direct calls and take messages. Schedule travel arrangements of directors. Receive and post packages and registered letters from couriers. Taking minutes and distributing notes after meetings."
+        },
+        {
+            "company": "Boston Small Business Association",
+            "title": "Administrator",
+            "start_date": "SEPTEMBER 2015",
+            "end_date": "SEPTEMBER 2015",
+            "description": "Job shadowing for two weeks at Boston Small Business Association."
+        },
+        {
+            "company": "Sunshine Retirement Village",
+            "title": "Weekend Care Giver",
+            "start_date": "JULY 2012",
+            "end_date": "JUNE 2015",
+            "description": "Assisting residents with shopping and banking activities. Organize weekly Bingo games."
+        }
+    ],
+    "education": [
+        {
+            "degree": "Bachelor of Marketing & Business Management",
+            "field": "Marketing & Business Management",
+            "institution": "Columbus State University, Atlanta",
+            "start_year": "2016",
+            "end_year": "2019"
+        },
+        {
+            "degree": "High School Diploma",
+            "field": null,
+            "institution": "Hawthorne High School, Boston",
+            "start_year": null,
+            "end_year": "2016"
+        }
+    ],
+    "file": "/app/resumes/Lisbon-Resume-Template-Creative.pdf"
+}

@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: airflow_pipeline
+
+    # Load variables from .env (GEMINI_API_KEY, GEMINI_MODEL, etc.)
+    env_file:
+      - .env
+
+    environment:
+      # Match the airflow user UID inside the container (from Dockerfile)
+      AIRFLOW_UID: ${AIRFLOW_UID:-50000}
+
+      # ---- Airflow basic config ----
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      # New location for DB conn (avoids deprecation warnings)
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "sqlite:////opt/airflow/airflow.db"
+
+      # ---- Fernet key (put actual value in .env) ----
+      AIRFLOW__CORE__FERNET_KEY: "${AIRFLOW__CORE__FERNET_KEY}"
+
+      # ---- Gemini config (values come from .env) ----
+      GEMINI_API_KEY: "${GEMINI_API_KEY}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-flash}"
+
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create
+          --username admin
+          --password admin
+          --firstname admin
+          --lastname admin
+          --role Admin
+          --email admin@example.com || true &&
+        airflow webserver --port 8080 &
+        airflow scheduler
+      "
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/data:/opt/airflow/data
+      - ./code:/app/code
+      - ./resumes:/app/resumes
+      - ./output:/app/output
+
+    restart: always
