@@ -15,6 +15,7 @@ class InterviewListCreateView(ListCreateAPIView):
     queryset = Interview.objects.all().order_by("-created_at")
     serializer_class = InterviewSerializer
     pagination_class = CustomPageNumberPagination
+    
 
 class InterviewRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = Interview.objects.all()
