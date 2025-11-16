@@ -1,11 +1,9 @@
 Django==5.2.8
 djangorestframework
-psycopg2-binary
 dj-database-url
 python-dotenv
 twilio
 requests
-PyMuPDF
 gunicorn
 whitenoise>=6.6.0
 numpy
