@@ -4,6 +4,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from .models import Job
 from .serializers import JobSerializer
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.views import APIView
 
 
 class CustomPageNumberPagination(PageNumberPagination):
@@ -22,3 +23,9 @@ class JobRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     serializer_class = JobSerializer
     lookup_field = "pk"
     pagination_class = CustomPageNumberPagination
+
+class JobCategoryListView(APIView):
+    def get(self, request):
+        categories = sorted(Job.objects.values_list('category', flat=True).distinct())
+        return Response({"categories": categories})
+
