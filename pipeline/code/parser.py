@@ -1,8 +1,13 @@
 import os
 import json
+import requests
 import google.generativeai as genai
 
+# Load Gemini API key
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+from constants import NGROK
+OUTPUT_DIR = "/app/output"
+FAILED_LOG = os.path.join(OUTPUT_DIR, "failed_logs.txt")
 
 SYSTEM_INSTRUCTIONS = """
 You are an AI specialized in parsing resumes.
@@ -43,6 +48,33 @@ STRICT RULES:
 - Always return a single JSON object without explanation text.
 """
 
+# -----------------------------------------------------
+# Helper functions
+# -----------------------------------------------------
+
+def extract_resume_id(filename: str) -> str:
+    """Extract the UUID before the first underscore."""
+    base = os.path.basename(filename)
+    id_number = base.split("_")[0]
+    print(id_number)
+    return id_number
+
+
+def log_failure(resume_id: str, filename: str, error: str):
+    """Write failure log."""
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(FAILED_LOG, "a", encoding="utf-8") as f:
+        f.write(f"{resume_id} | {filename} | {error}\n")
+    print(f"[PARSER][LOG] Logged failure for {resume_id}")
+
+
+def extract_json(text: str) -> str:
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1:
+        raise ValueError("No valid JSON found in model output")
+    return text[start:end+1]
+
 
 def clean_skills(skills):
     cleaned = []
@@ -57,70 +89,78 @@ def clean_skills(skills):
             cleaned.append(s)
     return cleaned
 
-
-def extract_json(text):
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1:
-        raise ValueError("No valid JSON found in model output")
-    return text[start:end+1]
-
+# -----------------------------------------------------
+# MAIN PARSER
+# -----------------------------------------------------
 
 def parse_resume_file(filepath: str) -> dict:
     print("--------------------------------------------------")
-    print(f"[PARSER] Starting parse for file: {filepath}")
+    print(f"[PARSER] Parsing file: {filepath}")
+
+    resume_id = extract_resume_id(filepath)
+    print(f"[PARSER] Resume ID: {resume_id}")
+
+    backend_url = f"{NGROK}/api/candidates/resumes/{resume_id}"
+    print(f"[PARSER] Backend URL: {backend_url}")
 
     model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-    print(f"[PARSER] Using Gemini model: {model_name}")
 
-    # Upload file
+    # Upload file to Gemini
     try:
-        print(f"[PARSER] Uploading file to Gemini: {filepath}")
         uploaded_file = genai.upload_file(filepath)
-        print(f"[PARSER] Upload successful: {uploaded_file.uri}")
+        print(f"[PARSER] File uploaded to Gemini: {uploaded_file.uri}")
     except Exception as e:
-        print(f"[PARSER][ERROR] Upload failed for {filepath}: {e}")
-        raise
+        error = f"Upload failed: {e}"
+        print("[PARSER][ERROR]", error)
+        log_failure(resume_id, filepath, error)
+        return None
 
-    # Generate content
+    # Generate LLM output
     try:
-        print(f"[PARSER] Sending request to Gemini model...")
         model = genai.GenerativeModel(model_name)
         response = model.generate_content([SYSTEM_INSTRUCTIONS, uploaded_file])
         print("[PARSER] Gemini response received.")
     except Exception as e:
-        print(f"[PARSER][ERROR] Gemini model error for {filepath}: {e}")
-        raise
+        error = f"LLM model error: {e}"
+        print("[PARSER][ERROR]", error)
+        log_failure(resume_id, filepath, error)
+        return None
 
-    # Extract text response
-    output = response.text or ""
-    print(f"[PARSER] Raw model output length: {len(output)}")
+    raw_output = response.text or ""
 
     # Extract JSON
     try:
-        print("[PARSER] Extracting JSON from model output...")
-        json_str = extract_json(output)
-        print(f"[PARSER] JSON extraction successful. Length: {len(json_str)}")
-        data = json.loads(json_str)
-        print("[PARSER] JSON parsed successfully.")
+        json_str = extract_json(raw_output)
+        parsed = json.loads(json_str)
+        print("[PARSER] JSON extraction success.")
     except Exception as e:
-        print(f"[PARSER][ERROR] Failed to extract valid JSON for {filepath}: {e}")
-        print(f"[PARSER][DEBUG] Model output (first 500 chars): {output[:500]}")
-        raise
+        error = f"JSON parse error: {e}"
+        print("[PARSER][ERROR]", error)
+        log_failure(resume_id, filepath, error)
+        return None
 
     # Clean skills
+    parsed["skills"] = clean_skills(parsed.get("skills", []))
+
+    # Build final payload for backend
+    payload = {
+        "parsed_data": parsed
+    }
+
+    # PATCH to backend
     try:
-        print("[PARSER] Cleaning skills list...")
-        data["skills"] = clean_skills(data.get("skills", []))
-        print("[PARSER] Skills cleaned.")
+        print("[PARSER] Sending parsed data to backend via PATCH...")
+        res = requests.patch(backend_url, json=payload, timeout=20)
+
+        print("[PARSER] Backend status:", res.status_code)
+        print("[PARSER] Backend response:", res.text)
+
+        if res.status_code >= 400:
+            raise Exception(f"Backend returned {res.status_code}: {res.text}")
+
     except Exception as e:
-        print(f"[PARSER][ERROR] Skills cleanup failed: {e}")
-        raise
+        error = f"Backend PATCH failed: {e}"
+        print("[PARSER][ERROR]", error)
+        log_failure(resume_id, filepath, error)
+        return None
 
-    # Add trace file
-    data["file"] = filepath
-
-    print("[PARSER] Finished parsing file successfully.")
-    print("--------------------------------------------------")
-
-    return data

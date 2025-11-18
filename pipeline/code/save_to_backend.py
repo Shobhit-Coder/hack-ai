@@ -1,6 +1,7 @@
 import os
 import json
-
+from constants import NGROK
+backend_url = NGROK + "/api/candidates/resumes/" + ID
 OUTPUT_DIR = "/app/output"
 
 
