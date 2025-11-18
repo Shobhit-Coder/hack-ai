@@ -8,9 +8,18 @@ from rest_framework.views import APIView
 
 
 class CustomPageNumberPagination(PageNumberPagination):
-    page_size = 10               # default if limit= is not provided
-    page_size_query_param = 'limit'
-    max_page_size = 100    
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+    def get_paginated_response(self, data):
+        return Response({
+            "results": data,
+            "total": self.page.paginator.count,
+            "page": self.page.number,
+            "page_size": self.get_page_size(self.request),
+            "total_pages": self.page.paginator.num_pages,
+        })
 
 
 class JobListCreateView(ListCreateAPIView):
@@ -22,7 +31,6 @@ class JobRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     lookup_field = "pk"
-    pagination_class = CustomPageNumberPagination
 
 class JobCategoryListView(APIView):
     def get(self, request):

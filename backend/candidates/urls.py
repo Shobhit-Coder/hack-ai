@@ -7,4 +7,5 @@ urlpatterns = [
     # Resumes
     path('resumes', views.ResumeListCreateView.as_view(), name='resume-list-create'),
     path('resumes/<uuid:pk>', views.ResumeRetrieveUpdateDestroyView.as_view(), name='resume-detail'),
+    path('resumes/<uuid:pk>/job-info', views.ResumeJobInfoView.as_view(), name='resume-job-info'),
 ]

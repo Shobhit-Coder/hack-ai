@@ -12,7 +12,6 @@ class Interview(TimestampedModel):
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     job_fit_score = models.FloatField(null=True, blank=True)
-    export_file_path = models.CharField(max_length=255, null=True, blank=True)
     
     status = models.CharField(max_length=50, choices=[
         ('scheduled', 'Scheduled'),
@@ -27,7 +26,8 @@ class Interview(TimestampedModel):
 
 class InterviewQuestion(TimestampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    interview = models.ForeignKey(Interview, on_delete=models.CASCADE, related_name='questions')
+    interview = models.ForeignKey(Interview, on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='interview_questions', null=True, blank=True)
     question_text = models.TextField()
     question_type = models.CharField(max_length=50, choices=[
         ('technical', 'Technical'),
@@ -35,6 +35,7 @@ class InterviewQuestion(TimestampedModel):
         ('experience', 'Experience'),
         ('other', 'Other'),
     ])
+    sequence_number = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"Question for {self.interview.candidate} - {self.question_text[:30]}..."
@@ -50,6 +51,7 @@ class SMSMessages(TimestampedModel):
     message_text = models.TextField()
     status = models.CharField(max_length=50, choices=[
         ('sent', 'Sent'),
+        ('received', 'Received'),
         ('delivered', 'Delivered'),
         ('failed', 'Failed'),
     ])

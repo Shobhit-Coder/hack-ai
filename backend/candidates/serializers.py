@@ -9,4 +9,5 @@ class CandidateSerializer(serializers.ModelSerializer):
 class ResumeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resume
-        fields = "__all__"
+        fields = ['id', 'candidate', 'file', 'resume_text', 'parsed_data', 'uploaded_at']
+        read_only_fields = ['candidate', 'file', 'uploaded_at']
