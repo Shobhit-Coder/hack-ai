@@ -430,6 +430,46 @@ async def post_interview_questions(candidate_id: str, questions: list):
             print(traceback.format_exc())
 
 
+async def create_interview(candidate_id: str, job_id: str, status: str = "scheduled"):
+    """
+    Creates an interview record tying candidate + job together.
+
+    Endpoint:
+      POST {BASE_URL}/api/interviews
+
+    Payload:
+      {
+        "candidate": "<candidate_id>",
+        "job": "<job_id>",
+        "status": "scheduled"
+      }
+
+    Returns interview_id (if present) or None.
+    """
+    url = f"{BASE_URL}/api/interviews"
+    payload = {
+        "candidate": candidate_id,
+        "job": job_id,
+        "status": status,
+    }
+    print(f"[PARSER] Creating interview -> POST {url} payload={payload}")
+    try:
+        res = await asyncio.to_thread(requests.post, url, json=payload, timeout=20)
+        if res.status_code >= 400:
+            print(f"[PARSER] ❌ Error creating interview: {res.status_code} {res.text}")
+            return None
+
+        data = res.json()
+        interview_id = data.get("interview_id") or data.get("id") or data.get("_id")
+        print(f"[PARSER] ✅ Interview created. ID={interview_id}")
+        return interview_id
+    except Exception as e:
+        print(f"[PARSER] ❌ Exception while creating interview: {e}")
+        print("[PARSER][TRACEBACK] create_interview exception:")
+        print(traceback.format_exc())
+        return None
+
+
 # -----------------------------------------------------
 # MAIN CONTROLLER: one full pass for a single resume
 # -----------------------------------------------------
@@ -444,6 +484,7 @@ async def parse_resume_async(filepath: str):
     4) Create candidate profile via POST /api/candidates.
     5) Generate interview questions with LLM.
     6) Store questions via POST /api/interviews/candidates/<candidate_id>/questions.
+    7) Create interview via POST /api/interviews.
     """
     print("--------------------------------------------------")
     print(f"[PARSER] Processing: {filepath}")
@@ -492,6 +533,7 @@ async def parse_resume_async(filepath: str):
             "candidate_id": None,
             "resume_job_score": None,
             "questions_count": 0,
+            "interview_id": None,
         }
 
     # ----------------------
@@ -506,6 +548,7 @@ async def parse_resume_async(filepath: str):
     # ----------------------
     candidate_id = None
     questions = []
+    interview_id = None
 
     if has_valid_contact:
         print("[PARSER] Step 4: Creating candidate profile...")
@@ -522,7 +565,7 @@ async def parse_resume_async(filepath: str):
         print("[PARSER] ⚠️ Missing contact fields; skipping candidate creation.")
 
     # ----------------------
-    # Step 5: Generate and store interview questions
+    # Step 5 & 6: Generate, store interview questions, then create interview
     # ----------------------
     if candidate_id:
         print("[PARSER] Step 5: Generating interview questions...")
@@ -539,13 +582,18 @@ async def parse_resume_async(filepath: str):
             print("[PARSER][TRACEBACK] Step 5 exception:")
             print(traceback.format_exc())
             questions = []
+
+        # Step 7: Create interview record tying candidate + job
+        print("[PARSER] Step 7: Creating interview record...")
+        interview_id = await create_interview(candidate_id, job_id, status="scheduled")
     else:
-        print("[PARSER] ⚠️ No candidate_id; skipping questions generation and storage.")
+        print("[PARSER] ⚠️ No candidate_id; skipping questions and interview creation.")
 
     final_output = {
         "candidate_id": candidate_id,
         "resume_job_score": resume_job_score,
         "questions_count": len(questions),
+        "interview_id": interview_id,
     }
 
     print(f"[PARSER] Process Complete for {resume_id} -> {final_output}")
