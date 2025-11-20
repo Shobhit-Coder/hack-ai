@@ -11,6 +11,8 @@ from rest_framework.generics import ListAPIView ,ListCreateAPIView, RetrieveUpda
 from interviews.models import Interview, InterviewQuestion, SMSMessages
 from interviews.serializers import InterviewSerializer, InterviewQuestionSerializer, SMSMessagesSerializer
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import ValidationError
+from candidates.models import Candidate
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
@@ -48,9 +50,20 @@ class InterviewRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
         })
 
 class InterviewQuestionListCreateView(ListCreateAPIView):
-    queryset = InterviewQuestion.objects.all().order_by("-created_at")
     serializer_class = InterviewQuestionSerializer
     pagination_class = CustomPageNumberPagination
+
+    def get_queryset(self):
+        queryset = InterviewQuestion.objects.all().order_by("-created_at")
+        candidate_id = self.kwargs.get("candidate_id")
+        return queryset.filter(candidate_id=candidate_id) if candidate_id else queryset
+
+    def perform_create(self, serializer):
+        candidate_id = self.kwargs.get("candidate_id")
+        if not candidate_id:
+            raise ValidationError({"candidate_id": "Candidate ID must be supplied in the URL."})
+        candidate = get_object_or_404(Candidate, pk=candidate_id)
+        serializer.save(candidate=candidate)
 
 class InterviewQuestionRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = InterviewQuestion.objects.all()

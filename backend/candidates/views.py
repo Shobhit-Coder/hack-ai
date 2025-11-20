@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+from django.db import IntegrityError
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
@@ -26,6 +28,18 @@ class CandidateListCreateView(ListCreateAPIView):
     queryset = Candidate.objects.all().order_by("-application_date")
     serializer_class = CandidateSerializer
     pagination_class = CustomPageNumberPagination
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            candidate = serializer.save()
+        except IntegrityError as exc:
+            raise serializers.ValidationError({"detail": "Candidate creation failed. Ensure the email is unique and data is valid."}) from exc
+        except Exception as exc:
+            # Ensure 4xx instead of 500 for any unexpected validation issues
+            raise serializers.ValidationError({"detail": "Candidate creation failed.", "error": str(exc)})
+        return Response({"candidate_id": str(candidate.id)}, status=201)
 
 class CandidateRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = Candidate.objects.all()

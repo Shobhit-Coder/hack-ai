@@ -8,7 +8,7 @@ class Interview(TimestampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='interviews')
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='interviews')
-    scheduled_at = models.DateTimeField()
+    scheduled_at = models.DateTimeField(null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     job_fit_score = models.FloatField(null=True, blank=True)

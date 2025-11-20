@@ -37,6 +37,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Ensure POST to non-slash URLs doesn't 500 due to redirect attempts
+APPEND_SLASH = False
+
 ROOT_URLCONF = 'interview_ai.urls'
 
 TEMPLATES = [

@@ -41,7 +41,6 @@ class Resume(TimestampedModel):
     job = models.ForeignKey(Job, on_delete=models.SET_NULL, null=True, blank=True)
     file = models.CharField(max_length=512)
     resume_text = models.TextField(blank=True, null=True)
-    parsed_data = models.JSONField(blank=True, null=True)
     resume_job_score = models.FloatField(blank=True, null=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
