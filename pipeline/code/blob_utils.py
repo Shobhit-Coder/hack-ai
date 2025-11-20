@@ -1,3 +1,4 @@
+# blob_utils.py
 import os
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ CONNECTION_STRING = os.getenv("AZURE_BLOB_CONNECTION_STRING")
 CONTAINER_NAME = os.getenv("AZURE_BLOB_CONTAINER")
 BLOB_PREFIX = os.getenv("AZURE_BLOB_PREFIX", "resumes/")
 LOCAL_DOWNLOAD_PATH = os.getenv("LOCAL_RESUME_DIR", "/app/resumes")
+
 
 def download_resumes_from_blob():
     """
@@ -47,7 +49,7 @@ def download_resumes_from_blob():
         relative_path = blob.name[len(BLOB_PREFIX):] if blob.name.startswith(BLOB_PREFIX) else blob.name
         # Remove leading slashes if any remain
         relative_path = relative_path.lstrip('/')
-        
+
         local_path = os.path.join(LOCAL_DOWNLOAD_PATH, relative_path)
 
         # 3. Ensure local subdirectories exist
@@ -62,7 +64,7 @@ def download_resumes_from_blob():
             continue
 
         print(f"[BLOB] Downloading -> {relative_path}")
-        
+
         try:
             with open(local_path, "wb") as file:
                 file.write(container_client.download_blob(blob).readall())
