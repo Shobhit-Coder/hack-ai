@@ -30,7 +30,6 @@ class Candidate(TimestampedModel):
         ],
         default='applied'
     )
-    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} - {self.status}"
@@ -38,10 +37,11 @@ class Candidate(TimestampedModel):
 
 class Resume(TimestampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='resumes')
-    file = models.FileField(upload_to='resumes/')
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='resumes', null=True, blank=True)
+    job = models.ForeignKey(Job, on_delete=models.SET_NULL, null=True, blank=True)
+    file = models.CharField(max_length=512)
     resume_text = models.TextField(blank=True, null=True)
-    parsed_data = models.JSONField(blank=True, null=True)
+    resume_job_score = models.FloatField(blank=True, null=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
