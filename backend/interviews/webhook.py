@@ -1,142 +1,192 @@
-import logging
 from rest_framework.views import APIView
 from django.http import HttpResponse
 from twilio.twiml.messaging_response import MessagingResponse
 from interviews.models import Interview, InterviewQuestion, SMSMessages
 from candidates.models import Candidate
 
-logger = logging.getLogger(__name__)
 
 class IncomingSMSWebhookView(APIView):
-    """
-    Handles incoming SMS webhooks from Twilio.
-    1. Identifies Candidate & Active Interview.
-    2. Saves the Incoming SMS (linking it to the previous question if possible).
-    3. Logic:
-       - If Scheduled + 'Yes': Start Interview (Send Q1).
-       - If Scheduled + 'No': Cancel/Exit.
-       - If In Progress: Save Answer -> Find Next Sequence -> Send Next Question.
-    """
-    
+
     def post(self, request, *args, **kwargs):
-        # 1. Parse Twilio Payload
-        data = request.POST 
-        incoming_msg = data.get('Body', '').strip()
-        sender_phone = data.get('From', '') 
-        
-        logger.info(f"Incoming SMS from {sender_phone}: {incoming_msg}")
+        print("\n--- Incoming Twilio Webhook ---")
+        print("POST DATA:", request.POST)
+
+        data = request.POST
+        incoming_msg = (data.get('Body') or '').strip()
+        sender_phone = data.get('From')
+        msg_status = (data.get('MessageStatus') or data.get('SmsStatus') or '').lower()
+        msg_sid = data.get('MessageSid')
 
         resp = MessagingResponse()
 
-        # 2. Validate Candidate and Interview
+        # ============================================================
+        # 1. HANDLE UNDELIVERED BEFORE *ANYTHING ELSE*
+        # ============================================================
+        if msg_status == "undelivered":
+            print(f"[UNDELIVERED] Message SID {msg_sid} failed. Resending…")
+
+            user_phone = data.get('To') or sender_phone
+            candidate = Candidate.objects.filter(phone_number=user_phone).first()
+
+            if not candidate:
+                print("No candidate found for phone:", user_phone)
+                resp.message("Delivery issue detected. Please wait.")
+                return HttpResponse(str(resp), content_type='application/xml')
+
+            interview = Interview.objects.filter(
+                candidate=candidate,
+                status__in=['scheduled', 'in_progress']
+            ).first()
+
+            if not interview:
+                print("No active interview for undelivered resend.")
+                resp.message("Delivery issue occurred, but no active interview exists.")
+                return HttpResponse(str(resp), content_type='application/xml')
+
+            last_outbound = SMSMessages.objects.filter(
+                interview=interview,
+                direction='outbound'
+            ).order_by('-created_at').first()
+
+            if not last_outbound:
+                print("No outbound message to resend.")
+                resp.message("Temporary issue occurred. Please try again.")
+                return HttpResponse(str(resp), content_type='application/xml')
+
+            resend_text = last_outbound.message_text
+            print("Resending:", resend_text)
+
+            resp.message(resend_text)
+
+            SMSMessages.objects.create(
+                interview=interview,
+                direction='outbound',
+                message_text=resend_text,
+                status='sent',
+                related_question=last_outbound.related_question
+            )
+
+            return HttpResponse(str(resp), content_type='application/xml')
+
+        # ============================================================
+        # 2. NORMAL INCOMING SMS (A USER REPLY)
+        # ============================================================
+        print("[INCOMING USER MESSAGE]:", incoming_msg)
+
         candidate = Candidate.objects.filter(phone_number=sender_phone).first()
-        
         if not candidate:
-            # If unknown number, ignore or send generic help
+            print("Unknown sender:", sender_phone)
             resp.message("We could not find an application linked to this phone number.")
             return HttpResponse(str(resp), content_type='application/xml')
 
-        # Look for an interview that is Scheduled or In Progress
-        active_interview = Interview.objects.filter(
-            candidate=candidate, 
+        interview = Interview.objects.filter(
+            candidate=candidate,
             status__in=['scheduled', 'in_progress']
         ).first()
 
-        if not active_interview:
-            # No active session, silent fail or polite generic msg
-            resp.message(f"Hi {candidate.first_name}, you don't have an active interview session at the moment.")
+        if not interview:
+            print("No active interview.")
+            resp.message(f"Hi {candidate.first_name}, you don't have an active interview session.")
             return HttpResponse(str(resp), content_type='application/xml')
 
-        # 3. Save the Incoming Message (The Answer)
-        # We try to find the question this message is answering by looking at the last Outbound SMS
-        last_outbound_sms = SMSMessages.objects.filter(
-            interview=active_interview, 
+        print("Interview status:", interview.status)
+
+        # Find last outbound → determine which question user replied to
+        last_outbound = SMSMessages.objects.filter(
+            interview=interview,
             direction='outbound'
         ).order_by('-created_at').first()
-        
-        related_q = last_outbound_sms.related_question if last_outbound_sms else None
 
+        related_q = last_outbound.related_question if last_outbound else None
+
+        # Save inbound message
         SMSMessages.objects.create(
-            interview=active_interview,
+            interview=interview,
             direction='inbound',
             message_text=incoming_msg,
             status='received',
             related_question=related_q
         )
 
-        # 4. Core Logic Flow
-        
-        # --- CASE A: INTERVIEW IS SCHEDULED (Waiting for User Confirmation) ---
-        if active_interview.status == 'scheduled':
-            if incoming_msg.lower() in ['yes', 'y', 'sure', 'ok']:
-                # User said YES. Start the interview.
-                active_interview.status = 'in_progress'
-                active_interview.save()
-                
-                # Find Question with sequence_number = 1
-                first_question = InterviewQuestion.objects.filter(
-                    interview=active_interview, 
+        # ============================================================
+        # CASE 1 — INTERVIEW WAITING FOR YES/NO CONFIRMATION
+        # ============================================================
+        if interview.status == "scheduled":
+            print("Interview is scheduled → expecting YES/NO")
+
+            lowered = incoming_msg.lower()
+
+            if lowered in ["yes", "y", "ok", "sure"]:
+                interview.status = "in_progress"
+                interview.save()
+                print("Interview started.")
+
+                first_q = InterviewQuestion.objects.filter(
+                    interview=interview,
                     sequence_number=1
                 ).first()
-                
-                if first_question:
-                    msg_text = f"Great! Let's begin.\n\n{first_question.question_text}"
-                    self._save_and_reply(resp, active_interview, msg_text, first_question)
-                else:
-                    # Error handling if no questions exist
-                    self._save_and_reply(resp, active_interview, "System Error: No questions configured for this interview.", None)
-            
-            elif incoming_msg.lower() in ['no', 'n', 'stop', 'cancel']:
-                # User said NO.
-                active_interview.status = 'canceled'
-                active_interview.save()
-                self._save_and_reply(resp, active_interview, "Understood. We have canceled the interview session. Have a great day.", None)
-            
+
+                if not first_q:
+                    resp.message("No questions configured. Please contact support.")
+                    return HttpResponse(str(resp), content_type='application/xml')
+
+                msg = f"Great! Let's begin.\n\n{first_q.question_text}"
+                self._reply(resp, interview, msg, first_q)
+                return HttpResponse(str(resp), content_type='application/xml')
+
+            elif lowered in ["no", "n", "cancel", "stop"]:
+                interview.status = "canceled"
+                interview.save()
+                print("Interview cancelled by user.")
+
+                self._reply(resp, interview, "Interview cancelled. Have a great day!", None)
+                return HttpResponse(str(resp), content_type='application/xml')
+
             else:
-                # User said something else (e.g., "Who is this?")
-                self._save_and_reply(resp, active_interview, "Please reply 'Yes' to start the interview or 'No' to cancel.", None)
+                print("Invalid reply for scheduled interview.")
+                self._reply(resp, interview, "Please reply YES or NO.", None)
+                return HttpResponse(str(resp), content_type='application/xml')
 
+        # ============================================================
+        # CASE 2 — INTERVIEW IN PROGRESS
+        # ============================================================
+        if interview.status == "in_progress":
+            print("Interview in progress → parsing user's answer")
 
-        # --- CASE B: INTERVIEW IS IN PROGRESS (Answering Questions) ---
-        elif active_interview.status == 'in_progress':
-            # The incoming message was the ANSWER to 'related_q' (calculated above).
-            
-            current_seq = 0
-            if related_q:
-                current_seq = related_q.sequence_number
-            
-            # Find the NEXT question (Sequence > Current Sequence)
-            next_question = InterviewQuestion.objects.filter(
-                interview=active_interview,
+            current_seq = related_q.sequence_number if related_q else 0
+
+            next_q = InterviewQuestion.objects.filter(
+                interview=interview,
                 sequence_number__gt=current_seq
             ).order_by('sequence_number').first()
 
-            if next_question:
-                # Ask the next question
-                self._save_and_reply(resp, active_interview, next_question.question_text, next_question)
-            else:
-                # No more questions found. Interview Complete.
-                active_interview.status = 'completed'
-                active_interview.save()
-                msg_text = "Thank you! That was the last question. We will review your answers and get back to you shortly."
-                self._save_and_reply(resp, active_interview, msg_text, None)
+            if next_q:
+                print("Sending next question:", next_q.sequence_number)
+                self._reply(resp, interview, next_q.question_text, next_q)
+                return HttpResponse(str(resp), content_type='application/xml')
 
+            # No more questions → mark complete
+            interview.status = "completed"
+            interview.save()
+
+            self._reply(resp, interview,
+                        "Thank you! That was the last question. We will review your answers.",
+                        None)
+            return HttpResponse(str(resp), content_type='application/xml')
+
+        print("Unexpected state.")
+        resp.message("Unexpected error. Please try again.")
         return HttpResponse(str(resp), content_type='application/xml')
 
-    def _save_and_reply(self, resp_obj, interview, text, question_obj):
-        """
-        Helper: Adds text to Twilio response AND saves it to DB as outbound.
-        """
-        # 1. Add to TwiML response (This sends the SMS)
-        resp_obj.message(text)
-        
-        # 2. Save record to DB
+    # ============================================================
+    # HELPER TO SEND OUTBOUND + SAVE
+    # ============================================================
+    def _reply(self, resp, interview, text, question):
+        resp.message(text)
         SMSMessages.objects.create(
             interview=interview,
             direction='outbound',
             message_text=text,
             status='sent',
-            related_question=question_obj
+            related_question=question
         )
-
-

@@ -40,6 +40,7 @@ class Resume(TimestampedModel):
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='resumes', null=True, blank=True)
     job = models.ForeignKey(Job, on_delete=models.SET_NULL, null=True, blank=True)
     file = models.CharField(max_length=512)
+    parsed_data = models.JSONField(blank=True, null=True)
     resume_text = models.TextField(blank=True, null=True)
     resume_job_score = models.FloatField(blank=True, null=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)

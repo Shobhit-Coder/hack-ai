@@ -1,5 +1,6 @@
 import os
 import requests
+from django.utils import timezone
 
 from rest_framework.views import APIView
 from rest_framework import status
@@ -95,6 +96,11 @@ class StartInterviewView(APIView):
                 {"detail": f"Cannot start interview. Current status is {interview.status}"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Set scheduled_at now and move to in_progress
+        interview.scheduled_at = timezone.now()
+        interview.started_at = interview.scheduled_at
+        interview.save(update_fields=["scheduled_at", "started_at"])
 
         candidate = interview.candidate
         
