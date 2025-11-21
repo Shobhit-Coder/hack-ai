@@ -3,6 +3,8 @@ from django.http import HttpResponse
 from twilio.twiml.messaging_response import MessagingResponse
 from interviews.models import Interview, InterviewQuestion, SMSMessages
 from candidates.models import Candidate
+from django.utils import timezone
+from interviews.gemini import classify_answer_quality
 
 
 class IncomingSMSWebhookView(APIView):
@@ -160,6 +162,20 @@ class IncomingSMSWebhookView(APIView):
                 sequence_number__gt=current_seq
             ).order_by('sequence_number').first()
 
+            # --- Added Monitoring Override Logic ---
+            if next_q and next_q.sequence_number == 4:
+                if self._should_reschedule(interview):
+                    cancel_msg = (
+                        "It seems you may not be fully prepared today, so let's reschedule your interview. "
+                        "You will be notified soon with the updated date. Thank you."
+                    )
+                    interview.status = "canceled"
+                    interview.ended_at = timezone.now()
+                    interview.save(update_fields=["status", "ended_at"])
+                    self._reply(resp, interview, cancel_msg, None)
+                    return HttpResponse(str(resp), content_type='application/xml')
+            # --- End Added Logic ---
+
             if next_q:
                 print("Sending next question:", next_q.sequence_number)
                 self._reply(resp, interview, next_q.question_text, next_q)
@@ -190,3 +206,34 @@ class IncomingSMSWebhookView(APIView):
             status='sent',
             related_question=question
         )
+
+    # ============================================================
+    # ADDED: Monitoring helper
+    # ============================================================
+    def _should_reschedule(self, interview):
+        """
+        Returns True if first three answered questions are all weak.
+        Conditions:
+          - Must have 3 inbound answers mapped to sequence 1..3
+          - Each classified weak by heuristic/Gemini
+        """
+        inbound_first_three = (
+            SMSMessages.objects.filter(
+                interview=interview,
+                direction='inbound',
+                related_question__sequence_number__in=[1, 2, 3]
+            )
+            .select_related("related_question")
+            .order_by("related_question__sequence_number")
+        )
+
+        # Ensure all three distinct question sequences answered
+        sequences = {m.related_question.sequence_number for m in inbound_first_three if m.related_question}
+        if sequences != {1, 2, 3}:
+            return False
+
+        # Classify each
+        for msg in inbound_first_three:
+            if not classify_answer_quality(msg.message_text):
+                return False  # Any strong answer aborts reschedule
+        return True

@@ -24,28 +24,22 @@ class DashboardDataAPIView(ListAPIView):
     # Job Status Data
     # ------------------------------------------------
     def get_job_status_data(self):
-        last_dates = (
-            Job.objects.annotate(day=TruncDate("created_at"))
-            .order_by("-day")
-            .values_list("day", flat=True)
-            .distinct()[:7]
-        )
-
-        last_dates = sorted([d for d in last_dates if d])
+        today = timezone.localdate()
+        days = [today - timedelta(days=i) for i in range(6, -1, -1)]  # last 7 days, oldest -> today
 
         daily_data = []
-        for date in last_dates:
-            start = timezone.make_aware(datetime.combine(date, datetime.min.time()))
-            end = start + timedelta(days=1)
+        for day in days:
+            start_dt = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+            end_dt = start_dt + timedelta(days=1)
 
-            day_jobs = Job.objects.filter(created_at__gte=start, created_at__lt=end)
+            day_jobs = Job.objects.filter(created_at__gte=start_dt, created_at__lt=end_dt)
             total = day_jobs.count()
             closed = day_jobs.filter(job_status="closed").count()
 
-            score = int((closed / total * 100)) if total > 0 else 0
+            score = int((closed / total) * 100) if total > 0 else 0
 
             daily_data.append({
-                "ts": date.strftime("%b %d"),
+                "ts": day.strftime("%b %d"),
                 "score": score
             })
 
