@@ -69,7 +69,6 @@ RULES:
 - Do NOT include any scoring or fit fields.
 """
 
-# IMPORTANT: all literal JSON braces are escaped as {{ }} so .format() doesn't treat them as placeholders
 SYSTEM_INSTRUCTIONS_QUESTIONS = """
 You are a Senior Technical Interviewer. 
 Based on the Candidate's Resume and the Job Description below, generate a set of interview questions.
@@ -109,6 +108,29 @@ def extract_resume_id(filename: str) -> str:
     return os.path.splitext(base)[0]
 
 
+def clean_phone_number(phone_str: str) -> str:
+    """
+    Trims whitespace, removes internal spaces/hyphens,
+    and ensures a country code exists (defaults to +91).
+    """
+    if not phone_str:
+        return None
+    
+    # Remove spaces and hyphens
+    clean = phone_str.replace(" ", "").replace("-", "").strip()
+    
+    # Remove leading zero (e.g., 098...)
+    if clean.startswith("0"):
+        clean = clean[1:]
+        
+    # Ensure it starts with '+'
+    # If no '+', assume India (+91) for this context
+    if not clean.startswith("+"):
+        clean = f"+91{clean}"
+        
+    return clean
+
+
 def log_failure(resume_id: str, filename: str, error: str):
     """Append failure information to a log file."""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -119,7 +141,6 @@ def log_failure(resume_id: str, filename: str, error: str):
 def validate_parsed_data(data: dict) -> bool:
     """
     Validates minimum contact fields for candidate creation.
-    Parsing itself is considered successful even if this fails.
     """
     required = ["first_name", "last_name", "email", "phone_number"]
     missing = [field for field in required if not data.get(field)]
@@ -131,8 +152,7 @@ def validate_parsed_data(data: dict) -> bool:
 
 def compute_resume_job_score(parsed_data: dict, job_description: str) -> float:
     """
-    Computes a simple numeric resume-job fit score in [0, 1]
-    based on overlap between candidate skills and JD keywords.
+    Computes a simple numeric resume-job fit score in [0, 1].
     """
     skills = [s.lower() for s in (parsed_data.get("skills") or [])]
     jd_text = (job_description or "").lower()
@@ -155,14 +175,6 @@ def compute_resume_job_score(parsed_data: dict, job_description: str) -> float:
 def fetch_job_details(resume_id: str):
     """
     Fetches job_id and job_description from backend using resume_id.
-
-    Assumption:
-    - API endpoint: GET {BASE_URL}/api/candidates/resumes/<resume_id>/job-info
-    - Response JSON shape (example):
-      {
-        "job_id": "uuid-here",
-        "job_description": "Long JD text..."
-      }
     """
     print(f"[PARSER] Fetching JD for Resume ID: {resume_id}")
     url = f"{BASE_URL}/api/candidates/resumes/{resume_id}/job-info"
@@ -190,7 +202,7 @@ def fetch_job_details(resume_id: str):
 
 
 async def wait_for_file_active(uploaded_file):
-    """Waits for the uploaded file to be ready for processing (Gemini Files API)."""
+    """Waits for the uploaded file to be ready for processing."""
     print(f"[PARSER] Waiting for file processing: {uploaded_file.name}...")
     while uploaded_file.state.name == "PROCESSING":
         await asyncio.sleep(2)
@@ -207,11 +219,7 @@ async def wait_for_file_active(uploaded_file):
 # -----------------------------------------------------
 
 async def patch_resume_job_score(resume_id: str, resume_job_score):
-    """
-    PATCH resume_job_score to backend:
-    PATCH {BASE_URL}/api/candidates/resume/<resume_id>
-    Payload: {"resume_job_score": <score or object>}
-    """
+    """PATCH resume_job_score to backend."""
     url = f"{BASE_URL}/api/candidates/resume/{resume_id}"
     payload = {"resume_job_score": resume_job_score}
     print(f"[PARSER] Patching resume_job_score for {resume_id} -> {resume_job_score}")
@@ -226,12 +234,7 @@ async def patch_resume_job_score(resume_id: str, resume_job_score):
 
 
 async def post_candidate_data(profile_payload: dict, resume_id: str):
-    """
-    Creates candidate profile:
-    POST {BASE_URL}/api/candidates
-    Payload: profile_payload
-    Returns candidate_id or None.
-    """
+    """Creates candidate profile."""
     url = f"{BASE_URL}/api/candidates"
     print(f"[PARSER] Posting candidate profile for resume_id={resume_id}...")
     print(f"profile_payload {profile_payload}")
@@ -251,22 +254,7 @@ async def post_candidate_data(profile_payload: dict, resume_id: str):
 
 
 async def generate_questions(parsed_data: dict, job_description: str):
-    """
-    Uses Gemini to generate interview questions based on:
-    - parsed_data["skills"]
-    - parsed_data["experience"]
-    - job_description
-
-    RETURN:
-      List[dict] where each dict is:
-        {
-          "sequence_number": int,
-          "question_type": str,
-          "question_text": str,
-        }
-
-    Any parsing issue is handled locally; returns [] on failure.
-    """
+    """Uses Gemini to generate interview questions."""
     print(f"[PARSER] Generating interview questions via LLM...")
     model = genai.GenerativeModel("gemini-2.5-flash", generation_config=JSON_CONFIG)
 
@@ -279,7 +267,6 @@ async def generate_questions(parsed_data: dict, job_description: str):
         ensure_ascii=False,
     )
 
-    # This .format was previously crashing because of unescaped braces in the template.
     prompt = SYSTEM_INSTRUCTIONS_QUESTIONS.format(
         job_description=job_description,
         candidate_json=candidate_json,
@@ -295,7 +282,6 @@ async def generate_questions(parsed_data: dict, job_description: str):
         print("[PARSER][DEBUG] Raw LLM questions response:")
         print(raw)
 
-        # Primary JSON parse
         try:
             data = json.loads(raw)
         except json.JSONDecodeError as e:
@@ -304,37 +290,24 @@ async def generate_questions(parsed_data: dict, job_description: str):
             end = raw.rfind("}")
             if start != -1 and end != -1 and end > start:
                 cleaned = raw[start:end + 1]
-                print("[PARSER][DEBUG] Trying cleaned JSON substring for questions:")
-                print(cleaned)
                 data = json.loads(cleaned)
             else:
-                print("[PARSER] ❌ Could not isolate JSON object in questions response.")
                 return []
 
         if not isinstance(data, dict):
-            print(f"[PARSER] ❌ Questions JSON top-level is not a dict. Got: {type(data)}")
-            return []
-
-        if "interview_questions" not in data:
-            print(f"[PARSER] ❌ 'interview_questions' key missing in LLM JSON. Keys: {list(data.keys())}")
             return []
 
         questions_obj = data.get("interview_questions") or []
         if not isinstance(questions_obj, list):
-            print(f"[PARSER] ❌ 'interview_questions' is not a list. Type: {type(questions_obj)}")
             return []
 
         question_dicts = []
         for idx, q in enumerate(questions_obj, start=1):
             if not isinstance(q, dict):
-                print(f"[PARSER] ⚠️ Skipping non-dict question item at index {idx}: {q}")
                 continue
-
             text = q.get("question")
             if not text:
-                print(f"[PARSER] ⚠️ Skipping question with no 'question' field at index {idx}: {q}")
                 continue
-
             q_type = q.get("question_type") or "general"
             seq = q.get("sequence_number") or idx
             try:
@@ -355,97 +328,47 @@ async def generate_questions(parsed_data: dict, job_description: str):
 
     except Exception as e:
         print(f"[PARSER] 🔥 ERROR Generating Questions: {e}")
-        print("[PARSER][TRACEBACK] generate_questions exception:")
         print(traceback.format_exc())
-        print("[PARSER][DEBUG] Raw LLM questions response (for debugging):")
-        print(raw)
         return []
 
 
-async def post_interview_questions(candidate_id: str, questions: list):
-    """
-    Stores generated interview questions.
-
-    Backend contract (you provided):
-      POST /api/interviews/candidates/<candidate_id>/questions
-      Payload:
-      {
-        "question_text": "What is your experience with Python?",
-        "question_type": "technical",
-        "sequence_number": 1
-      }
-
-    Here we:
-      - POST each question individually.
-      - candidate_id is taken from the URL path, not payload.
-    """
+async def post_interview_questions(candidate_id: str, questions: list, interview_id: str = None):
+    """Stores generated interview questions."""
     base = f"{BASE_URL}/api/interviews/candidates/{candidate_id}/questions"
 
     print(f"[PARSER] Posting {len(questions)} questions for Candidate {candidate_id}...")
+    if interview_id:
+        print(f"[PARSER] Linking questions to Interview ID: {interview_id}")
 
     for q in questions:
-        if not isinstance(q, dict):
-            print(f"[PARSER] ⚠️ Skipping non-dict question payload: {q}")
-            continue
-
         question_text = q.get("question_text")
         question_type = q.get("question_type") or "general"
         sequence_number = q.get("sequence_number") or 1
 
         if not question_text:
-            print(f"[PARSER] ⚠️ Skipping question with empty text: {q}")
             continue
-
-        try:
-            sequence_number = int(sequence_number)
-        except Exception:
-            sequence_number = 1
 
         payload = {
             "question_text": question_text,
             "question_type": question_type,
             "sequence_number": sequence_number,
         }
+        if interview_id:
+            payload["interview_id"] = interview_id
 
         print(f"[PARSER] -> POST {base} payload={payload}")
         try:
-            res = await asyncio.to_thread(
-                requests.post, base, json=payload, timeout=20
-            )
+            res = await asyncio.to_thread(requests.post, base, json=payload, timeout=20)
             if res.status_code >= 400:
-                print(
-                    f"[PARSER] ❌ Backend Error posting question "
-                    f"(seq={sequence_number}): {res.status_code} {res.text}"
-                )
+                print(f"[PARSER] ❌ Backend Error posting question: {res.status_code} {res.text}")
             else:
-                print(
-                    f"[PARSER] ✅ Question (seq={sequence_number}) posted successfully"
-                )
+                print(f"[PARSER] ✅ Question (seq={sequence_number}) posted successfully")
         except Exception as e:
-            print(
-                f"[PARSER] ❌ Connection Failed while posting question "
-                f"(seq={sequence_number}): {e}"
-            )
-            print("[PARSER][TRACEBACK] post_interview_questions exception:")
-            print(traceback.format_exc())
+            print(f"[PARSER] ❌ Connection Failed while posting question: {e}")
 
 
 async def create_interview(candidate_id: str, job_id: str, status: str = "scheduled"):
-    """
-    Creates an interview record tying candidate + job together.
-
-    Endpoint:
-      POST {BASE_URL}/api/interviews
-
-    Payload:
-      {
-        "candidate": "<candidate_id>",
-        "job": "<job_id>",
-        "status": "scheduled"
-      }
-
-    Returns interview_id (if present) or None.
-    """
+    """Creates an interview record tying candidate + job together."""
     url = f"{BASE_URL}/api/interviews"
     payload = {
         "candidate": candidate_id,
@@ -460,12 +383,24 @@ async def create_interview(candidate_id: str, job_id: str, status: str = "schedu
             return None
 
         data = res.json()
+        print(f"[PARSER][DEBUG] Create Interview Response: {data}")
+
+        # Try to find ID in common locations
         interview_id = data.get("interview_id") or data.get("id") or data.get("_id")
-        print(f"[PARSER] ✅ Interview created. ID={interview_id}")
+        
+        # Check inside 'data' wrapper if it exists (common API pattern)
+        if not interview_id and isinstance(data.get("data"), dict):
+            inner = data.get("data")
+            interview_id = inner.get("interview_id") or inner.get("id") or inner.get("_id")
+
+        if interview_id:
+            print(f"[PARSER] ✅ Interview created. ID={interview_id}")
+        else:
+            print(f"[PARSER] ⚠️ Interview created but ID not found in response keys.")
+            
         return interview_id
     except Exception as e:
         print(f"[PARSER] ❌ Exception while creating interview: {e}")
-        print("[PARSER][TRACEBACK] create_interview exception:")
         print(traceback.format_exc())
         return None
 
@@ -475,17 +410,7 @@ async def create_interview(candidate_id: str, job_id: str, status: str = "schedu
 # -----------------------------------------------------
 
 async def parse_resume_async(filepath: str):
-    """
-    Orchestrates the entire flow for a single resume file:
-
-    1) Parse resume with LLM -> parsed_data.
-    2) Fetch job description via API using resume_id.
-    3) Compute resume_job_score and PATCH it to backend.
-    4) Create candidate profile via POST /api/candidates.
-    5) Generate interview questions with LLM.
-    6) Store questions via POST /api/interviews/candidates/<candidate_id>/questions.
-    7) Create interview via POST /api/interviews.
-    """
+    """Orchestrates the entire flow for a single resume file."""
     print("--------------------------------------------------")
     print(f"[PARSER] Processing: {filepath}")
 
@@ -505,17 +430,13 @@ async def parse_resume_async(filepath: str):
             [SYSTEM_INSTRUCTIONS_PARSE, uploaded_file],
             safety_settings=SAFETY_SETTINGS,
         )
-
         raw = response.text
         print("[PARSER][DEBUG] Raw LLM parse response:")
         print(raw)
-
         parsed_data = json.loads(raw)
 
     except Exception as e:
         print(f"🔥🔥🔥 [CRITICAL ERROR] LLM parse failed for {resume_id}: {e}")
-        print("[PARSER][TRACEBACK] parse_resume_async (parse step) exception:")
-        print(traceback.format_exc())
         log_failure(resume_id, filepath, f"Parse Error: {e}")
         return None
 
@@ -552,11 +473,16 @@ async def parse_resume_async(filepath: str):
 
     if has_valid_contact:
         print("[PARSER] Step 4: Creating candidate profile...")
+        
+        # CLEAN PHONE NUMBER HERE
+        raw_phone = parsed_data.get("phone_number")
+        cleaned_phone = clean_phone_number(raw_phone)
+        
         profile_payload = {
             "first_name": parsed_data.get("first_name"),
             "last_name": parsed_data.get("last_name"),
             "email": parsed_data.get("email"),
-            "phone_number": parsed_data.get("phone_number"),
+            "phone_number": cleaned_phone,  # Use cleaned phone
             "applied_job": job_id,
         }
 
@@ -565,27 +491,32 @@ async def parse_resume_async(filepath: str):
         print("[PARSER] ⚠️ Missing contact fields; skipping candidate creation.")
 
     # ----------------------
-    # Step 5 & 6: Generate, store interview questions, then create interview
+    # Step 5: Create interview record (FIRST)
     # ----------------------
     if candidate_id:
-        print("[PARSER] Step 5: Generating interview questions...")
+        print("[PARSER] Step 5: Creating interview record...")
+        interview_id = await create_interview(candidate_id, job_id, status="scheduled")
+
+        # ----------------------
+        # Step 6: Generate interview questions
+        # ----------------------
+        print("[PARSER] Step 6: Generating interview questions...")
         try:
             questions = await generate_questions(parsed_data, job_description)
-            print(f"[PARSER] Step 5: generate_questions returned {len(questions)} items")
-
-            if questions:
-                await post_interview_questions(candidate_id, questions)
-            else:
-                print("[PARSER] ⚠️ No questions generated; skipping question POST.")
+            print(f"[PARSER] Step 6: generate_questions returned {len(questions)} items")
         except Exception as e:
-            print(f"[PARSER] 🔥 ERROR in Step 5 (questions pipeline) for {resume_id}: {e}")
-            print("[PARSER][TRACEBACK] Step 5 exception:")
-            print(traceback.format_exc())
+            print(f"[PARSER] 🔥 ERROR in Step 6 (questions pipeline) for {resume_id}: {e}")
             questions = []
 
-        # Step 7: Create interview record tying candidate + job
-        print("[PARSER] Step 7: Creating interview record...")
-        interview_id = await create_interview(candidate_id, job_id, status="scheduled")
+        # ----------------------
+        # Step 7: Post Questions (with interview_id)
+        # ----------------------
+        if questions:
+            print("[PARSER] Step 7: Posting questions...")
+            await post_interview_questions(candidate_id, questions, interview_id=interview_id)
+        else:
+            print("[PARSER] ⚠️ No questions generated; skipping question POST.")
+
     else:
         print("[PARSER] ⚠️ No candidate_id; skipping questions and interview creation.")
 
@@ -601,8 +532,5 @@ async def parse_resume_async(filepath: str):
 
 
 def parse_resume_file(filepath: str):
-    """
-    Public sync wrapper used by Airflow.
-    Do NOT change this signature.
-    """
+    """Public sync wrapper used by Airflow."""
     return asyncio.run(parse_resume_async(filepath))

@@ -1,1 +1,1 @@
-NGROK = "https://e68e527dac9d.ngrok-free.app"
+NGROK = "https://1971fdcd3202.ngrok-free.app"
