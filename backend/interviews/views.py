@@ -30,7 +30,12 @@ class InterviewListCreateView(ListCreateAPIView):
     queryset = Interview.objects.all().order_by("-created_at")
     serializer_class = InterviewSerializer
     pagination_class = CustomPageNumberPagination
-    
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        interview_id = response.data.get("id")
+        return Response({"interview_id": interview_id}, status=status.HTTP_201_CREATED)
+
 
 class InterviewRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = Interview.objects.all().prefetch_related('sms_messages')
@@ -63,8 +68,17 @@ class InterviewQuestionListCreateView(ListCreateAPIView):
         candidate_id = self.kwargs.get("candidate_id")
         if not candidate_id:
             raise ValidationError({"candidate_id": "Candidate ID must be supplied in the URL."})
+
         candidate = get_object_or_404(Candidate, pk=candidate_id)
-        serializer.save(candidate=candidate)
+
+        interview_id = self.request.data.get("interview_id")
+        if not interview_id:
+            raise ValidationError({"interview_id": "Interview ID must be provided in the request body."})
+
+        interview = get_object_or_404(Interview, pk=interview_id)
+
+        serializer.save(candidate=candidate, interview=interview)
+
 
 class InterviewQuestionRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = InterviewQuestion.objects.all()
