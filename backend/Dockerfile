@@ -24,4 +24,4 @@ EXPOSE 8000
 # 2. Collects static files
 # 3. Creates an admin user (Username: admin, Password: HackathonPassword123!)
 # 4. Starts Gunicorn
-CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && python manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'HackathonPassword123!')\" && gunicorn --bind 0.0.0.0:8000 your_project_name.wsgi"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && python manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'HackathonPassword123!')\" && gunicorn --bind 0.0.0.0:8000 interview_ai.wsgi"]
