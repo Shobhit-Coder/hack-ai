@@ -12,6 +12,13 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-temp-key')
 DEBUG = os.getenv("DEBUG", "False") == "True"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://my-django-backend.azurewebsites.net',
+]
+
+# While you are here, ensure this is also set correctly if it isn't already:
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
