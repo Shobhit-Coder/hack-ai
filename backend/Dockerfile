@@ -15,9 +15,13 @@ RUN apt-get update && apt-get install -y libpq-dev gcc && \
 
 COPY . .
 
+# ... (keep everything above the same) ...
+
 EXPOSE 8000
 
-# --- THIS IS THE MISSING PART ---
-# Replace 'your_project_name' with the name of the folder containing settings.py/wsgi.py
-# Example: if you have backend/hackathon_api/wsgi.py, use "hackathon_api.wsgi"
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "interview_ai.wsgi"]
+# This command does EVERYTHING automatically:
+# 1. Migrates database
+# 2. Collects static files
+# 3. Creates an admin user (Username: admin, Password: HackathonPassword123!)
+# 4. Starts Gunicorn
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && python manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'HackathonPassword123!')\" && gunicorn --bind 0.0.0.0:8000 your_project_name.wsgi"]
