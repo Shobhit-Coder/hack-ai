@@ -112,7 +112,7 @@ The API is versioned and organized by resource:
 To run the project locally, ensure you have Docker and Docker Compose installed.
 
 1.  **Clone the repository.**
-2.  **Create a `.env` file** in the `backend` directory with the necessary environment variables (see `.env.example`).
+2.  **Create a `.env` file** in the `backend` directory with the necessary environment variables .
 3.  **Run the application:**
     ```bash
     docker-compose up --build
