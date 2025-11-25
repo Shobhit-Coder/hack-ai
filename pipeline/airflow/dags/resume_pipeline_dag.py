@@ -101,8 +101,8 @@ default_args = {
 with DAG(
     dag_id="resume_parsing_pipeline_v3",  # keep same ID unless you want a new DAG
     default_args=default_args,
-    start_date=datetime(2024, 1, 1),
-    schedule_interval=None,  # Set to '@daily' or a cron expression when ready
+    start_date=days_ago(1),      # <-- Automatically today's date
+    schedule_interval="30 15 * * *",  # 9:00 PM daily
     catchup=False,
     tags=["hiring", "genai", "azure"],
 ) as dag:
