@@ -1,1 +1,1 @@
-NGROK = "https://1971fdcd3202.ngrok-free.app"
+NGROK = "https://my-django-backend.azurewebsites.net"
