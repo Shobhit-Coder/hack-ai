@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+/* Tailwind v4 dark variant helper */
+@custom-variant dark (&:is(.dark *));
+
+
+@layer base {
+  :root {
+    --radius: 0.625rem;
+
+    --background: #fdfdfd;
+    --foreground: #0E1B2B;
+
+    /* surfaces */
+    --card: #FFFFFF;
+    --card-foreground: #0E1B2B;
+
+    --popover: #FFFFFF;
+    --popover-foreground: #0E1B2B;
+
+    /* primary / brand */
+    --primary: #6E40D8;
+    --primary-foreground: #FFFFFF;
+
+    /* secondary / accents */
+    --secondary: #BFA8F5;
+    --secondary-foreground: #0E1B2B;
+
+    --muted: #8A8A99;
+    --muted-foreground: #8A8A99;
+
+    --accent: #FFD166;
+    --accent-foreground: #0E1B2B;
+
+    --destructive: #E24F3B;
+
+    --border: rgba(14,27,43,0.06);
+    --input: #FFFFFF;
+    --ring: rgba(110,64,216,0.18);
+
+    /* charts / extra */
+    --chart-1: #FFD166;
+    --chart-2: #6E40D8;
+    --chart-3: #BFA8F5;
+    --chart-4: #5B2FC0;
+    --chart-5: #4A9FE3;
+
+    /* sidebar */
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #0E1B2B;
+    --sidebar-primary: #6E40D8;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #BFA8F5;
+    --sidebar-accent-foreground: #0E1B2B;
+    --sidebar-border: rgba(14,27,43,0.06);
+    --sidebar-ring: rgba(110,64,216,0.18);
+  }
+
+  /* dark theme: simplified hex equivalents */
+  .dark {
+    --background: #0E1B2B;
+    --foreground: #F4F4FB;
+
+    --card: #121826;
+    --card-foreground: #F4F4FB;
+
+    --popover: #121826;
+    --popover-foreground: #F4F4FB;
+
+    --primary: #5B2FC0;
+    --primary-foreground: #FFFFFF;
+
+    --secondary: #6E40D8;
+    --secondary-foreground: #FFFFFF;
+
+    --muted: #A9A9B3;
+    --muted-foreground: #A9A9B3;
+
+    --accent: #FFD166;
+    --accent-foreground: #0E1B2B;
+
+    --destructive: #E24F3B;
+
+    --border: rgba(255,255,255,0.06);
+    --input: #0E1B2B;
+    --ring: rgba(91,47,192,0.22);
+
+    --chart-1: #6E40D8;
+    --chart-2: #4A9FE3;
+    --chart-3: #FFD166;
+    --chart-4: #5B2FC0;
+    --chart-5: #FFD6A5;
+
+    --sidebar: #121826;
+    --sidebar-foreground: #F4F4FB;
+    --sidebar-primary: #5B2FC0;
+    --sidebar-primary-foreground: #F4F4FB;
+    --sidebar-accent: #6E40D8;
+    --sidebar-accent-foreground: #F4F4FB;
+    --sidebar-border: rgba(255,255,255,0.06);
+    --sidebar-ring: rgba(91,47,192,0.22);
+  }
+
+  /* Tailwind/Shadcn base (no change) */
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground; }
+}
+
+/* Optional extra radii mapped to tokens (keep as-is) */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
