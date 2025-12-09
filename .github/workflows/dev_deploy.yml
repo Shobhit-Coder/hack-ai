@@ -3,7 +3,7 @@ name: Build and Deploy to Azure
 on:
   push:
     branches:
-      - dev  # Runs only when you push to dev
+      - django-backend  # Runs only when you push to dev
 
 jobs:
   build-and-push:
