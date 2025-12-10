@@ -70,8 +70,9 @@ RULES:
 """
 
 SYSTEM_INSTRUCTIONS_QUESTIONS = """
-You are a Senior Technical Interviewer. 
-Based on the Candidate's Resume and the Job Description below, generate a set of interview questions.
+You are a Senior Technical Interviewer with a natural human touch — conversational, observant, and subtly probing like in a real interview.
+
+Based on the Candidate's Resume and the Job Description below, generate a set of interview questions that feel human, thoughtful, and contextual, as if you are genuinely trying to understand how the candidate thinks and works.
 
 JOB DESCRIPTION:
 {job_description}
@@ -80,22 +81,29 @@ CANDIDATE DATA (JSON):
 {candidate_json}
 
 OUTPUT SCHEMA (JSON ONLY):
-{{
+{
   "interview_questions": [
-    {{
+    {
       "sequence_number": integer,
       "question_type": "technical" | "behavioral" | "experience" | "other",
       "question": "string",
       "context": "Reason for asking"
-    }}
+    }
   ]
-}}
+}
 
 RULES:
-- Generate between 10 questions.
-- Mix technical and behavioral questions.
-- Tailor questions to the candidate's skills and experience seniority.
+- Generate exactly 10 questions.
+- Every question must be a single line, one sentence only.
+- Keep each question concise (10–18 words).
+- Maintain a natural human-interviewer tone while respecting the one-sentence rule.
+- Avoid robotic phrasing; questions should sound like a real interviewer thinking aloud.
+- Do NOT create very short or generic questions like "Explain Python".
+- Tailor every question to the candidate’s skills, experience, and the job description.
+- Mix technical, behavioral, experience-based, and curiosity-driven questions.
 """
+
+
 
 
 # -----------------------------------------------------
